@@ -187,6 +187,7 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
 // No checking of bounds here, this function should be fast
 //
 
+/// @yw INVSQRT2: 0.707106781=1/sqrt(2), why?
 #define INVSQRT2 0.707106781
 
 inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential, int n) {
