@@ -51,6 +51,7 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
     int c = 0;
     int ns = xs_ * ys_;
     
+    /// @yw find out the lowest potential neighbor
     while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
@@ -73,7 +74,7 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
         current.second = min_y;
         path.push_back(current);
         
-        if(c++>ns*4){
+        if(c++>ns*4){ /// @yw why multipied by 4, here is outside of moving 4 directions
             return false;
         }
 

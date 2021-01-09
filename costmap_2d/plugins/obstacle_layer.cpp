@@ -44,6 +44,7 @@ PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;
+using costmap_2d::HUMAN;
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
@@ -404,7 +405,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       }
 
       unsigned int index = getIndex(mx, my);
-      costmap_[index] = LETHAL_OBSTACLE;
+      costmap_[index] = HUMAN;
       touch(px, py, min_x, min_y, max_x, max_y);
     }
   }
