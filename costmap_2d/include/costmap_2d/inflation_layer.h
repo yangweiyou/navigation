@@ -99,19 +99,20 @@ public:
   /** @brief  Given a distance, compute a cost.
    * @param  distance The distance from an obstacle in cells
    * @return A cost value for the distance */
-  inline unsigned char computeCost(double distance) const
+  inline unsigned char computeCost(double distance, int obstacle_cost=LETHAL_OBSTACLE) const
   {
     unsigned char cost = 0;
     if (distance == 0)
-      cost = LETHAL_OBSTACLE;
+      cost = obstacle_cost; // LETHAL_OBSTACLE;
     else if (distance * resolution_ <= inscribed_radius_)
-      cost = INSCRIBED_INFLATED_OBSTACLE;
+      cost = obstacle_cost -1; // INSCRIBED_INFLATED_OBSTACLE;
     else
     {
       // make sure cost falls off by Euclidean distance
       double euclidean_distance = distance * resolution_;
       double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
-      cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
+//       cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
+      cost = (unsigned char)((obstacle_cost - 2) * factor);
     }
     return cost;
   }
@@ -158,6 +159,21 @@ private:
     return cached_costs_[dx][dy];
   }
 
+  /**
+   * @brief  Lookup pre-computed costs
+   * @param mx The x coordinate of the current cell
+   * @param my The y coordinate of the current cell
+   * @param src_x The x coordinate of the source cell
+   * @param src_y The y coordinate of the source cell
+   * @return
+   */
+  inline unsigned char costLookupHuman(int mx, int my, int src_x, int src_y)
+  {
+    unsigned int dx = abs(mx - src_x);
+    unsigned int dy = abs(my - src_y);
+    return cached_costs_human_[dx][dy];
+  }
+
   void computeCaches();
   void deleteKernels();
   void inflate_area(int min_i, int min_j, int max_i, int max_j, unsigned char* master_grid);
@@ -182,6 +198,7 @@ private:
   int seen_size_;
 
   unsigned char** cached_costs_;
+  unsigned char** cached_costs_human_;
   double** cached_distances_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
 

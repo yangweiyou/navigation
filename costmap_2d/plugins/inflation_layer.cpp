@@ -45,6 +45,7 @@
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
 
 using costmap_2d::LETHAL_OBSTACLE;
+using costmap_2d::HUMAN;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 using costmap_2d::NO_INFORMATION;
 
@@ -275,6 +276,68 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   }
 
   inflation_cells_.clear();
+  
+  
+  std::vector<CellData>& obs_bin_human = inflation_cells_[0.0];
+  for (int j = min_j; j < max_j; j++)
+  {
+    for (int i = min_i; i < max_i; i++)
+    {
+      int index = master_grid.getIndex(i, j);
+      unsigned char cost = master_array[index];
+      if (cost == HUMAN)
+      {
+        obs_bin_human.push_back(CellData(index, i, j, i, j));
+      }
+    }
+  }
+
+  // Process cells by increasing distance; new cells are appended to the corresponding distance bin, so they
+  // can overtake previously inserted but farther away cells
+//   std::map<double, std::vector<CellData> >::iterator bin;
+  for (bin = inflation_cells_.begin(); bin != inflation_cells_.end(); ++bin)
+  {
+    for (int i = 0; i < bin->second.size(); ++i)
+    {
+      // process all cells at distance dist_bin.first
+      const CellData& cell = bin->second[i];
+
+      unsigned int index = cell.index_;
+
+      // ignore if already visited
+      if (seen_[index])
+      {
+        continue;
+      }
+
+      seen_[index] = true;
+
+      unsigned int mx = cell.x_;
+      unsigned int my = cell.y_;
+      unsigned int sx = cell.src_x_;
+      unsigned int sy = cell.src_y_;
+
+      // assign the cost associated with the distance from an obstacle to the cell
+      unsigned char cost = costLookupHuman(mx, my, sx, sy);
+      unsigned char old_cost = master_array[index];
+      if (old_cost == NO_INFORMATION && (inflate_unknown_ ? (cost > FREE_SPACE) : (cost >= HUMAN-1)))
+        master_array[index] = cost;
+      else
+        master_array[index] = std::max(old_cost, cost);
+
+      // attempt to put the neighbors of the current cell onto the inflation list
+      if (mx > 0)
+        enqueue(index - 1, mx - 1, my, sx, sy);
+      if (my > 0)
+        enqueue(index - size_x, mx, my - 1, sx, sy);
+      if (mx < size_x - 1)
+        enqueue(index + 1, mx + 1, my, sx, sy);
+      if (my < size_y - 1)
+        enqueue(index + size_x, mx, my + 1, sx, sy);
+    }
+  }
+
+  inflation_cells_.clear();
 }
 
 /**
@@ -314,11 +377,13 @@ void InflationLayer::computeCaches()
     deleteKernels();
 
     cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_costs_human_ = new unsigned char*[cell_inflation_radius_ + 2];
     cached_distances_ = new double*[cell_inflation_radius_ + 2];
 
     for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
     {
       cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_costs_human_[i] = new unsigned char[cell_inflation_radius_ + 2];
       cached_distances_[i] = new double[cell_inflation_radius_ + 2];
       for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
       {
@@ -333,7 +398,8 @@ void InflationLayer::computeCaches()
   {
     for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
     {
-      cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
+      cached_costs_[i][j] = computeCost(cached_distances_[i][j], LETHAL_OBSTACLE);
+      cached_costs_human_[i][j] = computeCost(cached_distances_[i][j], HUMAN);
     }
   }
 }
