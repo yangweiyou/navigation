@@ -405,7 +405,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       }
 
       unsigned int index = getIndex(mx, my);
-      costmap_[index] = HUMAN;
+      costmap_[index] = HUMAN; // LETHAL_OBSTACLE; // HUMAN;
       touch(px, py, min_x, min_y, max_x, max_y);
     }
   }
